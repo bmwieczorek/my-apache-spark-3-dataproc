@@ -2,6 +2,7 @@ package com.bartek.spark;
 
 import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.function.MapFunction;
+import org.apache.spark.api.java.function.MapPartitionsFunction;
 import org.apache.spark.broadcast.Broadcast;
 import org.apache.spark.sql.*;
 import org.apache.spark.sql.api.java.UDF1;
@@ -14,7 +15,9 @@ import org.apache.spark.sql.types.StructType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -37,13 +40,14 @@ public class SparkJavaApp {
             argsMap.put("bucket", projectId + "-bartek-dataproc");
             argsMap.put("sourceTable", "bartek_person.bartek_person_table");
             argsMap.put("targetTable", "bartek_person.bartek_person_spark");
+            argsMap.put("path", "src/test/resources/myRecord-10.snappy.avro"); // "gs://" + argsMap.get("bucket") + "/myRecord.snappy.avro"
         }
         LOGGER.info("argsMap={}", argsMap);
 
         SparkSession spark = SparkSession.builder().config(sparkConf).getOrCreate();
 
         Dataset<Row> dataDS = spark.read().format("avro")
-                .load("gs://" + argsMap.get("bucket") + "/myRecord.snappy.avro");
+                .load(argsMap.get("path"));
         dataDS.printSchema();
 
         Dataset<Row> refDS = spark.read().format("bigquery")
@@ -101,7 +105,21 @@ public class SparkJavaApp {
 
         dataDS3.printSchema();
 
-        dataDS3.write().format("bigquery")
+        Dataset<Row> dataDS4 = dataDS3.mapPartitions((MapPartitionsFunction<Row, Row>) iterator -> {
+            LOGGER.info("mapPartitions setup"); // executed once per partition
+            List<Row> result = new ArrayList<>();
+            while (iterator.hasNext()) {
+                Row row = iterator.next();
+                LOGGER.info("mapPartitions process {}", row); // executed for each row in partition
+                result.add(row);
+            }
+            LOGGER.info("mapPartitions cleanup"); // executed once per partition
+            return result.iterator();
+        }, RowEncoder.apply(dataDS3.schema()));
+
+        dataDS4.printSchema();
+
+        dataDS4.write().format("bigquery")
                 .option("writeMethod", "indirect")
                 .option("temporaryGcsBucket", argsMap.get("bucket"))
                 .mode(SaveMode.Append)
