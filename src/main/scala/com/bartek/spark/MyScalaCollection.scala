@@ -22,13 +22,23 @@ object MyScalaCollection {
 
 class MyCollection[T](data: Seq[T]) {
 
-  def map[R: MyEncoder](fun: T => R): MyCollection[R] = {
+  def map[R: MyEncoder](fun: T => R): MyCollection[R] = { // Accessing an Implicit Parameter Introduced by a Context Bound https://stackoverflow.com/questions/3855595/what-is-the-scala-identifier-implicitly
     val newData: Seq[R] = data.map(t => {
       val newElement = fun(t)
-      implicitly[MyEncoder[R]].encode(newElement)
+      val myEncoder = implicitly[MyEncoder[R]]
+      myEncoder.encode(newElement)
     })
     new MyCollection[R](newData)
   }
+
+  // the above is the same as below
+//  def map[R](fun: T => R)(implicit myEncoder: MyEncoder[R]): MyCollection[R] = {
+//    val newData: Seq[R] = data.map(t => {
+//      val newElement = fun(t)
+//      myEncoder.encode(newElement)
+//    })
+//    new MyCollection[R](newData)
+//  }
 
   override def toString: String = "MyCollection[" + data.mkString(",") + "]"
 }
@@ -61,7 +71,7 @@ object MyEncoders {
 
   class MyIntEncoder extends MyEncoder[Int] {
     override def encode[T](t: T): Int = {
-      print("Using String encoder for ")
+      print("Using Int encoder for ")
       super.encode(t)
     }
   }
