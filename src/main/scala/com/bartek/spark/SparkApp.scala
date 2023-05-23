@@ -70,7 +70,7 @@ object SparkApp {
       val res: List[Row] = iterator.map(row => {
         LOGGER.info(s"[foreachPartition] processing $row")
         row
-      }).toList // as Iterator.map is lazy the cleanup is executed before processing, so .toList is required
+      }).toList // as Iterator.map is lazy the cleanup is executed before processing, so .toList is required to trigger calculation before cleanup
 
       LOGGER.info("[foreachPartition] cleanup")
       res.toIterator
