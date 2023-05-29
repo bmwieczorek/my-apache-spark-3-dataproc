@@ -1,0 +1,43 @@
+{
+  "myRequiredInt": 123,
+  "myRequiredString": "abc",
+  "myOptionalString": null,
+  "myNullableString": null,
+  "myRequiredBoolean": true,
+  "myRequiredBytes": "ABC123",
+  "myBytesDecimal": "IPO",
+  "myRequiredTimestamp": 1685292531792000,
+  "myOptionalTimestamp": null,
+  "myRequiredDate": 19505,
+  "myRequiredArrayLongs": [
+    1,
+    2,
+    3
+  ],
+  "myRequiredSubRecord": {
+    "myRequiredDouble": 1.0,
+    "myRequiredBoolean": false
+  },
+  "myOptionalSubRecord": {
+    "myOptionalSubRecordType": {
+      "myRequiredFloat": 2.0,
+      "myRequiredBoolean": true
+    }
+  },
+  "myNullableSubRecord": {
+    "myNullableSubRecordType": {
+      "myRequiredLong": 12,
+      "myRequiredBoolean": false
+    }
+  },
+  "myOptionalArraySubRecords": {
+    "array": [
+      {
+        "myRequiredBoolean": true
+      },
+      {
+        "myRequiredBoolean": false
+      }
+    ]
+  }
+}

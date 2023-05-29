@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<myRecord myRequiredInt="123" myRequiredString="abc" myRequiredBoolean="true" myRequiredTimestamp="1685026045710">
+    <myRequiredBytes>ABCABC</myRequiredBytes>
+    <myRequiredDate>19506</myRequiredDate>
+    <myBytesDecimal>3.45</myBytesDecimal>
+    <myRequiredArrayLong>1</myRequiredArrayLong>
+    <myRequiredArrayLong>2</myRequiredArrayLong>
+    <myRequiredArrayLong>3</myRequiredArrayLong>
+    <myRequiredArrayLongs>
+        <myRequiredArrayLong>11</myRequiredArrayLong>
+        <myRequiredArrayLong>22</myRequiredArrayLong>
+    </myRequiredArrayLongs>
+    <myRequiredSubRecord>
+        <myRequiredDouble>1.0</myRequiredDouble>
+        <myRequiredBoolean>false</myRequiredBoolean>
+    </myRequiredSubRecord>
+    <myOptionalSubRecord myRequiredFloat="2.0" myRequiredBoolean="true"/>
+    <myNullableSubRecord myRequiredBoolean="true">12</myNullableSubRecord>
+    <myOptionalArraySubRecord myRequiredDouble="3.0" myRequiredBoolean="true"/>
+    <myOptionalArraySubRecord myRequiredDouble="4.0"  myRequiredBoolean="false"/>
+    <myOptionalArraySubRecords>
+        <myOptionalArraySubRecord myRequiredFloat="5.0" myRequiredBoolean="false"/>
+        <myOptionalArraySubRecord myRequiredFloat="6.0" myRequiredBoolean="true"/>
+    </myOptionalArraySubRecords>
+</myRecord>

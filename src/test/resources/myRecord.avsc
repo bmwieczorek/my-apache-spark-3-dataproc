@@ -1,0 +1,276 @@
+{
+  "type": "record",
+  "name": "myRecord",
+  "fields": [
+    {
+      "name": "myRequiredInt",
+      "type": "int",
+      "xpath": "@myRequiredInt"
+    },
+    {
+      "name": "myRequiredString",
+      "type": "string",
+      "xpath": "@myRequiredString"
+    },
+    {
+      "name": "myOptionalString",
+      "type": [
+        "null",
+        "string"
+      ],
+      "default": null,
+      "xpath": "@myOptionalString"
+    },
+    {
+      "name": "myNullableString",
+      "type": [
+        "string",
+        "null"
+      ],
+      "default": "myNullableStringDefaultValue",
+      "xpath": "@myNullableString"
+    },
+    {
+      "name": "myRequiredBoolean",
+      "type": "boolean",
+      "xpath": "@myRequiredBoolean"
+    },
+    {
+      "name": "myRequiredBytes",
+      "type": "bytes",
+      "xpath": "myRequiredBytes"
+    },
+    {
+      "name": "myBytesDecimal",
+      "type": {
+        "type": "bytes",
+        "logicalType": "decimal",
+        "precision": 38,
+        "scale": 9
+      },
+      "xpath": "myBytesDecimal"
+    },
+    {
+      "name": "myRequiredTimestamp",
+      "type": {
+        "type": "long",
+        "logicalType": "timestamp-micros"
+      },
+      "xpath": "@myRequiredTimestamp"
+    },
+    {
+      "name": "myOptionalTimestamp",
+      "type": [
+        "null",
+        {
+          "type": "long",
+          "logicalType": "timestamp-micros"
+        }
+      ],
+      "default": null,
+      "xpath": "@myOptionalTimestamp"
+    },
+    {
+      "name": "myRequiredDate",
+      "type": {
+        "type": "int",
+        "logicalType": "date"
+      },
+      "doc": "Expiration date field",
+      "xpath": "myRequiredDate"
+    },
+    {
+      "name": "myRequiredArrayLongList",
+      "type": {
+        "type": "array",
+        "items": "long"
+      },
+      "xpath": "myRequiredArrayLong"
+    },
+
+    {
+      "name": "myRequiredArrayLongs",
+      "type": {
+        "type": "array",
+        "items": "long"
+      },
+      "xpath": "myRequiredArrayLongs/myRequiredArrayLong"
+    },
+    {
+      "name": "myRequiredArrayLongs2",
+      "type": {
+        "type": "record",
+        "name": "myRequiredArrayLongsType2",
+        "fields": [
+          {
+            "name": "myRequiredArrayLongList",
+            "type": {
+              "type": "array",
+              "items": "long"
+            },
+            "xpath": "myRequiredArrayLong"
+          }
+        ]
+      },
+      "xpath": "myRequiredArrayLongs"
+    },
+    {
+      "name": "myRequiredSubRecord",
+      "type": {
+        "type": "record",
+        "name": "myRequiredSubRecordType",
+        "fields": [
+          {
+            "name": "myRequiredDouble",
+            "type": "double",
+            "xpath": "myRequiredDouble"
+          },
+          {
+            "name": "myRequiredBoolean",
+            "type": "boolean",
+            "xpath": "myRequiredBoolean"
+          }
+        ]
+      },
+      "xpath": "myRequiredSubRecord"
+    },
+    {
+      "name": "myOptionalSubRecord",
+      "type": [
+        "null",
+        {
+          "type": "record",
+          "name": "myOptionalSubRecordType",
+          "fields": [
+            {
+              "name": "myRequiredFloat",
+              "type": "float",
+              "xpath": "@myRequiredFloat"
+            },
+            {
+              "name": "myRequiredBoolean",
+              "type": "boolean",
+              "xpath": "@myRequiredBoolean"
+            }
+          ]
+        }
+      ],
+      "default": null,
+      "xpath": "myOptionalSubRecord"
+    },
+    {
+      "name": "myNullableSubRecord",
+      "type": [
+        {
+          "type": "record",
+          "name": "myNullableSubRecordType",
+          "fields": [
+            {
+              "name": "myRequiredInt",
+              "type": "int",
+              "xpath": "."
+            },
+            {
+              "name": "myRequiredBoolean",
+              "type": "boolean",
+              "xpath": "@myRequiredBoolean"
+            }
+          ]
+        },
+        "null"
+      ],
+      "xpath": "myNullableSubRecord"
+    },
+    {
+      "name": "myOptionalArraySubRecordList",
+      "type": [
+        {
+          "type": "array",
+          "items": {
+            "type": "record",
+            "name": "myOptionalArraySubRecordListType",
+            "fields": [
+              {
+                "name": "myRequiredDouble",
+                "type": "double",
+                "xpath": "@myRequiredDouble"
+              },
+              {
+                "name": "myRequiredBoolean",
+                "type": "boolean",
+                "xpath": "@myRequiredBoolean"
+              }
+            ]
+          }
+        },
+        "null"
+      ],
+      "xpath": "myOptionalArraySubRecord"
+    },
+    {
+      "name": "myOptionalArraySubRecords",
+      "type": [
+        {
+          "type": "array",
+          "items": {
+            "type": "record",
+            "name": "myOptionalArraySubRecordsType",
+            "fields": [
+              {
+                "name": "myRequiredFloat",
+                "type": "float",
+                "xpath": "@myRequiredFloat"
+              },
+              {
+                "name": "myRequiredBoolean",
+                "type": "boolean",
+                "xpath": "@myRequiredBoolean"
+              }
+            ]
+          }
+        },
+        "null"
+      ],
+      "xpath": "myOptionalArraySubRecords/myOptionalArraySubRecord"
+    },
+    {
+      "name": "myOptionalArraySubRecords2",
+      "type": [
+        {
+          "type": "record",
+          "name": "myOptionalArraySubRecordType2",
+          "fields": [
+            {
+              "name": "myOptionalArraySubRecordList",
+              "type": [
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "record",
+                    "name": "myOptionalArraySubRecordListType2",
+                    "fields": [
+                      {
+                        "name": "myRequiredFloat",
+                        "type": "float",
+                        "xpath": "@myRequiredFloat"
+                      },
+                      {
+                        "name": "myRequiredBoolean",
+                        "type": "boolean",
+                        "xpath": "@myRequiredBoolean"
+                      }
+                    ]
+                  }
+                },
+                "null"
+              ],
+              "xpath": "myOptionalArraySubRecord"
+            }
+          ]
+        },
+        "null"
+      ],
+      "xpath": "myOptionalArraySubRecords"
+    }
+  ]
+}
