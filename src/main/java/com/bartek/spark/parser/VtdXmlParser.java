@@ -11,15 +11,15 @@ import org.slf4j.LoggerFactory;
 
 import java.io.Serializable;
 import java.math.BigDecimal;
-import java.math.BigInteger;
 import java.math.RoundingMode;
-import java.nio.ByteBuffer;
 import java.sql.Date;
 import java.sql.Timestamp;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
+import static com.bartek.spark.SchemaUtils.unwrapSchema;
 
 public class VtdXmlParser {
     private static final Logger LOGGER = LoggerFactory.getLogger(VtdXmlParser.class);
@@ -36,13 +36,6 @@ public class VtdXmlParser {
             case BYTES: return s -> (logicalType == null ? s.getBytes() : BigDecimal.valueOf(Double.parseDouble(s)).setScale(9, RoundingMode.UNNECESSARY));
             default: throw new UnsupportedOperationException("Unsupported " + type + ", " + logicalType);
         }
-    }
-
-    private static ByteBuffer doubleToByteBuffer(Double d) {
-        if (d == null) return null;
-        BigDecimal bigDecimal = BigDecimal.valueOf(d).setScale(9, RoundingMode.UNNECESSARY);
-        BigInteger bigInteger = bigDecimal.unscaledValue();
-        return ByteBuffer.wrap(bigInteger.toByteArray());
     }
 
     private final List<Entry> mappingEntries;
@@ -75,7 +68,20 @@ public class VtdXmlParser {
         }
     }
 
-//    private GenericRecord parseVTDGen(VTDNav nav, List<Entry> mappingEntries, Schema outputRecordSchema) {
+    public Row parseBytes(byte[] xmlBytes) {
+        VTDGen vtdGen = new VTDGen();
+        vtdGen.setDoc(xmlBytes);
+        try {
+            vtdGen.parse(false);
+            VTDNav nav = vtdGen.getNav();
+            return parseVTDGen(nav, mappingEntries, schema);
+        } catch (ParseException e) {
+            LOGGER.error("Failed to parse", e);
+            throw new RuntimeException(e);
+        }
+    }
+
+    //    private GenericRecord parseVTDGen(VTDNav nav, List<Entry> mappingEntries, Schema outputRecordSchema) {
     private Row parseVTDGen(VTDNav nav, List<Entry> mappingEntries, Schema outputRecordSchema) {
 //        GenericRecord outputRecord = new GenericData.Record(outputRecordSchema);
         List<Object> data = new ArrayList<>(schema.getFields().size());
@@ -304,15 +310,6 @@ public class VtdXmlParser {
         childrenEntries = childrenFields.stream().map(VtdXmlParser::convertToEntry).collect(Collectors.toList());
         return new Entry(field.name(), field.getProp("xpath"), field.schema(), parserClass, childrenEntries);
     }
-
-    private static Schema unwrapSchema(Schema schema) {
-        if (schema.getType() == Type.UNION) {
-            List<Schema> types = schema.getTypes();
-            return types.get(0).getType() == Type.NULL ? types.get(1) : types.get(0);
-        }
-        return schema;
-    }
-
 
     private static Class<?> getParserClass(String parserClassName) {
         Class<?> parserClass;
