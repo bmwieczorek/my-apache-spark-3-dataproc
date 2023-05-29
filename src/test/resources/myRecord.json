@@ -4,11 +4,11 @@
   "myOptionalString": null,
   "myNullableString": null,
   "myRequiredBoolean": true,
-  "myRequiredBytes": "ABC123",
+  "myRequiredBytes": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<myRecord myRequiredInt=\"1234\" myRequiredString=\"abc\" myRequiredBoolean=\"true\" myRequiredTimestamp=\"1685026045710\">\n    <myRequiredBytes>ABCABC</myRequiredBytes>\n    <myRequiredDate>19506</myRequiredDate>\n    <myBytesDecimal>34.5</myBytesDecimal>\n    <myRequiredArrayLong>11</myRequiredArrayLong>\n    <myRequiredArrayLong>12</myRequiredArrayLong>\n    <myRequiredArrayLong>13</myRequiredArrayLong>\n    <myRequiredArrayLongs>\n        <myRequiredArrayLong>21</myRequiredArrayLong>\n        <myRequiredArrayLong>22</myRequiredArrayLong>\n    </myRequiredArrayLongs>\n    <myRequiredSubRecord>\n        <myRequiredDouble>30.0</myRequiredDouble>\n        <myRequiredBoolean>false</myRequiredBoolean>\n    </myRequiredSubRecord>\n    <myOptionalSubRecord myRequiredFloat=\"40.0\" myRequiredBoolean=\"true\"/>\n    <myNullableSubRecord myRequiredBoolean=\"true\">50</myNullableSubRecord>\n    <myOptionalArraySubRecord myRequiredDouble=\"60.0\" myRequiredBoolean=\"true\"/>\n    <myOptionalArraySubRecord myRequiredDouble=\"70.0\"  myRequiredBoolean=\"false\"/>\n    <myOptionalArraySubRecords>\n        <myOptionalArraySubRecord myRequiredFloat=\"80.0\" myRequiredBoolean=\"false\"/>\n        <myOptionalArraySubRecord myRequiredFloat=\"90.0\" myRequiredBoolean=\"true\"/>\n    </myOptionalArraySubRecords>\n</myRecord>\n",
   "myBytesDecimal": "IPO",
-  "myRequiredTimestamp": 1685292531792000,
+  "myRequiredTimestamp": 1685376746235000,
   "myOptionalTimestamp": null,
-  "myRequiredDate": 19505,
+  "myRequiredDate": 19506,
   "myRequiredArrayLongs": [
     1,
     2,
@@ -26,7 +26,7 @@
   },
   "myNullableSubRecord": {
     "myNullableSubRecordType": {
-      "myRequiredLong": 12,
+      "myRequiredLong": 3,
       "myRequiredBoolean": false
     }
   },
