@@ -1,23 +1,22 @@
 package com.bartek.spark.parser;
 
-import com.bartek.spark.SchemaUtils;
+import com.bartek.spark.GenericRecordToRowConverter;
+import com.bartek.spark.Utils;
 import org.apache.avro.Schema;
+import org.apache.avro.generic.GenericRecord;
 import org.apache.spark.sql.Row;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import java.io.File;
-import java.io.IOException;
 import java.math.BigDecimal;
-import java.math.BigInteger;
 import java.math.RoundingMode;
-import java.nio.ByteBuffer;
-import java.util.List;
+
+import static com.bartek.spark.Utils.unwrapSchema;
 
 public class MyRecordDeclarativeParserTest {
     @Test
-    public void shouldParseXmlFile() throws IOException {
-        Schema schema = SchemaUtils.getSchema("myRecord.avsc");
+    public void shouldParseXmlFile() {
+        Schema schema = Utils.getSchema("myRecord.avsc");
         VtdXmlParser vtdXmlParser = new VtdXmlParser(schema);
         // given
         String xmlFilePath = "src/test/resources/myRecord.xml";
@@ -29,13 +28,26 @@ public class MyRecordDeclarativeParserTest {
         runAssertions(row, schema);
     }
 
+    @Test
+    public void shouldParseXmlFile2() {
+        Schema schema = Utils.getSchema("myRecord.avsc");
+        VtdXmlGenericRecordParser vtdXmlParser = new VtdXmlGenericRecordParser(schema);
+        // given
+        String xmlFilePath = "src/test/resources/myRecord.xml";
+        // when
+        GenericRecord record = vtdXmlParser.parseFile(xmlFilePath);
+        Row row = GenericRecordToRowConverter.convert(record);
+        // then
+//        runAssertions(record);
+        runAssertions(row, schema);
+    }
 
     private static void runAssertions(Row row, Schema schema) {
         Assertions.assertEquals(1234, row.getInt(schema.getField("myRequiredInt").pos()));
         Assertions.assertEquals("abc", row.getString(schema.getField("myRequiredString").pos()));
-        Assertions.assertEquals("ABCABC", new String((byte[]) row.get(schema.getField("myRequiredBytes").pos())));
+        Assertions.assertEquals("ABCDEF", new String((byte[]) row.get(schema.getField("myRequiredBytes").pos())));
         Assertions.assertEquals("2023-05-29", row.getDate(schema.getField("myRequiredDate").pos()).toString());
-//        Assertions.assertEquals(BigDecimal.valueOf(3.45).setScale(9, RoundingMode.UNNECESSARY), byteBufferToBigDecimal(clone((ByteBuffer) row.get(schema.getField("myBytesDecimal").pos()))));
+//        Assertions.assertEquals(BigDecimal.valueOf(3.45).setScale(9, RoundingMode.UNNECESSARY), byteBufferToBigDecimal((ByteBuffer) row.get(schema.getField("myBytesDecimal").pos())));
         Assertions.assertEquals(BigDecimal.valueOf(34.5).setScale(9, RoundingMode.UNNECESSARY), row.get(schema.getField("myBytesDecimal").pos()));
         Assertions.assertArrayEquals(new Long[]{ 11L, 12L, 13L }, (Long[]) row.get(schema.getField("myRequiredArrayLongList").pos()));
         Assertions.assertArrayEquals(new Long[]{ 21L, 22L }, (Long[]) row.get(schema.getField("myRequiredArrayLongs").pos()));
@@ -68,7 +80,6 @@ public class MyRecordDeclarativeParserTest {
         Assertions.assertEquals(70.0d, myOptionalArraySubRecordListSecondRow.getDouble(myOptionalArraySubRecordListElementSchema.getField("myRequiredDouble").pos()));
         Assertions.assertFalse(myOptionalArraySubRecordListSecondRow.getBoolean(myOptionalArraySubRecordListElementSchema.getField("myRequiredBoolean").pos()));
 
-
         Row[] myOptionalArraySubRecordsRow = (Row[]) row.get(schema.getField("myOptionalArraySubRecords").pos());
         Schema myOptionalArraySubRecordsRowSchema = unwrapSchema(schema.getField("myOptionalArraySubRecords").schema());
         Schema myOptionalArraySubRecordsElementSchema = myOptionalArraySubRecordsRowSchema.getElementType();
@@ -76,7 +87,6 @@ public class MyRecordDeclarativeParserTest {
         Assertions.assertFalse(myOptionalArraySubRecordsRow[0].getBoolean(myOptionalArraySubRecordsElementSchema.getField("myRequiredBoolean").pos()));
         Assertions.assertEquals(90.0f, myOptionalArraySubRecordsRow[1].getFloat(myOptionalArraySubRecordsElementSchema.getField("myRequiredFloat").pos()));
         Assertions.assertTrue(myOptionalArraySubRecordsRow[1].getBoolean(myOptionalArraySubRecordsElementSchema.getField("myRequiredBoolean").pos()));
-
 
         Row myOptionalArraySubRecords2Row = (Row) row.get(schema.getField("myOptionalArraySubRecords2").pos());
         Schema myOptionalArraySubRecords2RowSchema = unwrapSchema(schema.getField("myOptionalArraySubRecords2").schema());
@@ -88,30 +98,4 @@ public class MyRecordDeclarativeParserTest {
         Assertions.assertEquals(90.0f, myOptionalArraySubRecordList[1].getFloat(myOptionalArraySubRecords2ElementRowSchemaElementType.getField("myRequiredFloat").pos()));
         Assertions.assertTrue(myOptionalArraySubRecordList[1].getBoolean(myOptionalArraySubRecords2ElementRowSchemaElementType.getField("myRequiredBoolean").pos()));
     }
-
-    public static ByteBuffer clone(ByteBuffer original) {
-        ByteBuffer clone = ByteBuffer.allocate(original.capacity());
-        original.rewind(); //copy from the beginning
-        clone.put(original);
-        original.rewind();
-        clone.flip();
-        return clone;
-    }
-
-    public static BigDecimal byteBufferToBigDecimal(ByteBuffer byteBuffer) {
-        ByteBuffer bb = clone(byteBuffer);
-        byte[] bytes = new byte[bb.remaining()];
-        bb.get(bytes);
-        BigInteger bigInteger = new BigInteger(bytes);
-        return new BigDecimal(bigInteger, 9);
-    }
-
-    private static Schema unwrapSchema(Schema schema) {
-        if (schema.getType() == Schema.Type.UNION) {
-            List<Schema> types = schema.getTypes();
-            return types.get(0).getType() == Schema.Type.NULL ? types.get(1) : types.get(0);
-        }
-        return schema;
-    }
-
 }

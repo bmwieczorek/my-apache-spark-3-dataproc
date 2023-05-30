@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <myRecord myRequiredInt="1234" myRequiredString="abc" myRequiredBoolean="true" myRequiredTimestamp="1685026045710">
-    <myRequiredBytes>ABCABC</myRequiredBytes>
+    <myRequiredBytes>ABCDEF</myRequiredBytes>
     <myRequiredDate>19506</myRequiredDate>
     <myBytesDecimal>34.5</myBytesDecimal>
     <myRequiredArrayLong>11</myRequiredArrayLong>

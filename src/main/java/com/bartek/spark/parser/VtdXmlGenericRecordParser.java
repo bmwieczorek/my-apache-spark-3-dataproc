@@ -4,8 +4,8 @@ import com.ximpleware.*;
 import org.apache.avro.LogicalType;
 import org.apache.avro.Schema;
 import org.apache.avro.Schema.Type;
-import org.apache.spark.sql.Row;
-import org.apache.spark.sql.RowFactory;
+import org.apache.avro.generic.GenericData;
+import org.apache.avro.generic.GenericRecord;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -21,8 +21,8 @@ import java.util.stream.Stream;
 
 import static com.bartek.spark.Utils.unwrapSchema;
 
-public class VtdXmlParser {
-    private static final Logger LOGGER = LoggerFactory.getLogger(VtdXmlParser.class);
+public class VtdXmlGenericRecordParser {
+    private static final Logger LOGGER = LoggerFactory.getLogger(VtdXmlGenericRecordParser.class);
 
     private static Function<String, ?> getConverterFunction(Type type, LogicalType logicalType) {
         switch (type) {
@@ -41,21 +41,21 @@ public class VtdXmlParser {
     private final List<Entry> mappingEntries;
     private final Schema schema;
 
-    public VtdXmlParser(Schema schema) {
-        this.mappingEntries = schema.getFields().stream().map(VtdXmlParser::convertToEntry).collect(Collectors.toList());
+    public VtdXmlGenericRecordParser(Schema schema) {
+        this.mappingEntries = schema.getFields().stream().map(VtdXmlGenericRecordParser::convertToEntry).collect(Collectors.toList());
         this.schema = schema;
     }
 
-//    public GenericRecord parseFile(String xmlFilePath) {
-    public Row parseFile(String xmlFilePath) {
+    public GenericRecord parseFile(String xmlFilePath) {
+//    public Row parseFile(String xmlFilePath) {
         VTDGen vtdGen = new VTDGen();
         vtdGen.parseFile(xmlFilePath, false);
         VTDNav nav = vtdGen.getNav();
         return parseVTDGen(nav, mappingEntries, schema);
     }
 
-//    public GenericRecord parseXml(String xmlFilePath) {
-    public Row parseXml(String xmlFilePath) {
+    public GenericRecord parseXml(String xmlFilePath) {
+//    public Row parseXml(String xmlFilePath) {
         VTDGen vtdGen = new VTDGen();
         vtdGen.setDoc(xmlFilePath.getBytes());
         try {
@@ -68,8 +68,8 @@ public class VtdXmlParser {
         }
     }
 
-//    public GenericRecord parseBytes(byte[] xmlBytes) {
-    public Row parseBytes(byte[] xmlBytes) {
+    public GenericRecord parseBytes(byte[] xmlBytes) {
+//    public Row parseBytes(byte[] xmlBytes) {
         VTDGen vtdGen = new VTDGen();
         vtdGen.setDoc(xmlBytes);
         try {
@@ -82,47 +82,47 @@ public class VtdXmlParser {
         }
     }
 
-    //    private GenericRecord parseVTDGen(VTDNav nav, List<Entry> mappingEntries, Schema outputRecordSchema) {
-    private Row parseVTDGen(VTDNav nav, List<Entry> mappingEntries, Schema outputRecordSchema) {
-//        GenericRecord outputRecord = new GenericData.Record(outputRecordSchema);
-        List<Object> data = new ArrayList<>(schema.getFields().size());
+    private GenericRecord parseVTDGen(VTDNav nav, List<Entry> mappingEntries, Schema outputRecordSchema) {
+//    private Row parseVTDGen(VTDNav nav, List<Entry> mappingEntries, Schema outputRecordSchema) {
+        GenericRecord outputRecord = new GenericData.Record(outputRecordSchema);
+//        List<Object> data = new ArrayList<>(schema.getFields().size());
         mappingEntries.forEach(entry -> {
             try {
                 Schema schema = unwrapSchema(entry.schema);
                 Type type = schema.getType();
                 switch (type) {
                     case RECORD: {
-//                        List<GenericRecord> subRecords = processRecords(nav, entry, schema);
-                        Row[] subRows = processRecords(nav, entry, schema);
-//                        GenericRecord subRecord = getFirstElementOrNull(subRecords);
-//                        outputRecord.put(entry.field, subRecord);
-                        data.addAll(Arrays.asList(subRows));
+                        List<GenericRecord> subRecords = processRecords(nav, entry, schema);
+//                        Row[] subRows = processRecords(nav, entry, schema);
+                        GenericRecord subRecord = getFirstElementOrNull(subRecords);
+                        outputRecord.put(entry.field, subRecord);
+//                        data.addAll(Arrays.asList(subRows));
                         break;
                     }
                     case ARRAY: {
                         Schema elementSchema = unwrapSchema(schema.getElementType());
                         if (elementSchema.getType() == Type.RECORD) {
-//                            List<GenericRecord> records = processRecords(nav, entry, elementSchema);
-//                            GenericData.Array<GenericRecord> array = new GenericData.Array<>(schema, records);
-                            Row[] rows = processRecords(nav, entry, elementSchema);
-//                            outputRecord.put(entry.field, array);
-                            data.add(rows);
+                            List<GenericRecord> records = processRecords(nav, entry, elementSchema);
+                            GenericData.Array<GenericRecord> array = new GenericData.Array<>(schema, records);
+//                            Row[] rows = processRecords(nav, entry, elementSchema);
+                            outputRecord.put(entry.field, array);
+//                            data.add(rows);
                         } else {
                             Object elements = processValues(nav, entry, elementSchema);
-//                            outputRecord.put(entry.field, elements);
-                            data.add(elements);
+                            outputRecord.put(entry.field, elements);
+//                            data.add(elements);
                         }
                         break;
                     }
                     default: {
                         if (entry.clazz != null && CustomFieldParser.class.isAssignableFrom(entry.clazz)) {
                             Object value = parseField(nav, entry);
-//                            outputRecord.put(entry.field, value);
-                            data.add(value);
+                            outputRecord.put(entry.field, value);
+//                            data.add(value);
                         } else {
                             Object value = processValue(nav, entry, schema);
-//                            outputRecord.put(entry.field, value);
-                            data.add(value);
+                            outputRecord.put(entry.field, value);
+//                            data.add(value);
                         }
                     }
                 }
@@ -130,8 +130,8 @@ public class VtdXmlParser {
                 LOGGER.error("Failed to parse value for entry " + entry, e);
             }
         });
-//        return outputRecord;
-        return RowFactory.create(data.toArray());
+        return outputRecord;
+//        return RowFactory.create(data.toArray());
     }
 
     private Object processValue(VTDNav nav, Entry entry, Schema elementSchema) {
@@ -150,8 +150,8 @@ public class VtdXmlParser {
         LogicalType logicalType = elementSchema.getLogicalType();
         Function<String, ?> typeTransformationFunction = getConverterFunction(type, logicalType);
         Stream<?> stream = values.stream().map(typeTransformationFunction);
-//        return stream.collect(Collectors.toList());
-        return toTypedArray(type, logicalType, stream);
+        return stream.collect(Collectors.toList());
+//        return toTypedArray(type, logicalType, stream);
     }
 
     @SuppressWarnings({"SuspiciousToArrayCall", "DuplicateBranchesInSwitch", "ConditionalExpressionWithIdenticalBranches"})
@@ -175,37 +175,36 @@ public class VtdXmlParser {
         }
     }
 
-//    private GenericRecord processRecord(VTDNav nav, VtdXmlGenericRecordParser.Entry entry, Schema schema) {
-    private Row processRecord(VTDNav nav, Entry entry, Schema schema) {
-//        List<GenericRecord> records = processRecords(nav, entry, schema);
-        Row[] rows = processRecords(nav, entry, schema);
-//        return getFirstElementOrNull(records);
-        return getFirstElementOrNull(rows);
+    private GenericRecord processRecord(VTDNav nav, Entry entry, Schema schema) {
+//    private Row processRecord(VTDNav nav, Entry entry, Schema schema) {
+        List<GenericRecord> records = processRecords(nav, entry, schema);
+//        Row[] rows = processRecords(nav, entry, schema);
+        return getFirstElementOrNull(records);
+//        return getFirstElementOrNull(rows);
     }
 
-
-//    private List<GenericRecord> processRecords(VTDNav nav, Entry entry, Schema schema) {
-    private Row[] processRecords(VTDNav nav, Entry entry, Schema schema) {
-//        List<GenericRecord> records = new ArrayList<>();
-        List<Row> rows = new ArrayList<>();
+    private List<GenericRecord> processRecords(VTDNav nav, Entry entry, Schema schema) {
+//    private Row[] processRecords(VTDNav nav, Entry entry, Schema schema) {
+        List<GenericRecord> records = new ArrayList<>();
+//        List<Row> rows = new ArrayList<>();
         String xpath = entry.xpath;
         AutoPilot ap = new AutoPilot();
         try {
             ap.selectXPath(xpath);
             ap.bind(nav);
             while (ap.evalXPath() > 0) { // requires a while loop, not if statement
-//                GenericRecord record = parseVTDGen(nav, entry.children, schema);
-                Row row = parseVTDGen(nav, entry.children, schema);
-//                records.add(record);
-                rows.add(row);
+                GenericRecord record = parseVTDGen(nav, entry.children, schema);
+//                Row row = parseVTDGen(nav, entry.children, schema);
+                records.add(record);
+//                rows.add(row);
             }
         } catch (VTDException e) {
             LOGGER.error("Failed to process record for entry " + entry, e);
         } finally {
             ap.resetXPath();
         }
-//        return records;
-        return rows.toArray(Row[]::new);
+        return records;
+//        return rows.toArray(Row[]::new);
     }
 
     private static List<String> extractValue(VTDNav nav, Entry entry) {
@@ -313,7 +312,7 @@ public class VtdXmlParser {
                 }
             }
         }
-        childrenEntries = childrenFields.stream().map(VtdXmlParser::convertToEntry).collect(Collectors.toList());
+        childrenEntries = childrenFields.stream().map(VtdXmlGenericRecordParser::convertToEntry).collect(Collectors.toList());
         return new Entry(field.name(), field.getProp("xpath"), field.schema(), parserClass, childrenEntries);
     }
 

@@ -1,5 +1,6 @@
 package com.bartek.spark;
 
+import com.bartek.spark.parser.VtdXmlGenericRecordParser;
 import com.bartek.spark.parser.VtdXmlParser;
 import org.apache.avro.LogicalTypes;
 import org.apache.avro.Schema;
@@ -14,6 +15,7 @@ import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.function.MapPartitionsFunction;
 import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
+import org.apache.spark.sql.SaveMode;
 import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.avro.SchemaConverters;
 import org.apache.spark.sql.catalyst.encoders.RowEncoder;
@@ -23,22 +25,14 @@ import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
-import java.math.BigDecimal;
-import java.math.BigInteger;
-import java.math.RoundingMode;
 import java.nio.ByteBuffer;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.sql.Date;
 import java.util.Arrays;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import static com.bartek.spark.SchemaUtils.getSchema;
-import static com.bartek.spark.SchemaUtils.unwrapSchema;
+import static com.bartek.spark.Utils.*;
 
 
 public class SparkVtdJavaApp {
@@ -68,12 +62,13 @@ public class SparkVtdJavaApp {
         dataDS.printSchema();
         dataDS.show();
 
-        Schema outputSchema = SchemaUtils.getSchema("myRecord.avsc");
+        Schema outputSchema = getSchema("myRecord.avsc");
         StructType outputStructType = (StructType) SchemaConverters.toSqlType(outputSchema).dataType();
 
         Dataset<Row> dataDS4 = dataDS.mapPartitions((MapPartitionsFunction<Row, Row>) inputIterator -> {
             LOGGER.info("[MapPartitions] setup"); // executed once per partition
             VtdXmlParser vtdXmlParser = new VtdXmlParser(outputSchema);
+            VtdXmlGenericRecordParser vtdXmlGenericRecordParser = new VtdXmlGenericRecordParser(outputSchema);
 
             return new Iterator<>() {
                 @Override
@@ -85,7 +80,9 @@ public class SparkVtdJavaApp {
                 public Row next() {
                     Row inputRow = inputIterator.next();
                     byte[] bytes = inputRow.getAs("myRequiredBytes");
-                    Row outputRow = vtdXmlParser.parseBytes(bytes);
+//                    Row outputRow = vtdXmlParser.parseBytes(bytes);
+                    GenericRecord record = vtdXmlGenericRecordParser.parseBytes(bytes);
+                    Row outputRow = GenericRecordToRowConverter.convert(record);
                     LOGGER.info("[MapPartitions] processing {}, {}", inputRow, outputRow); // executed for each row in partition
                     return outputRow;
                 }
@@ -94,6 +91,14 @@ public class SparkVtdJavaApp {
 
         dataDS4.printSchema();
         dataDS4.show();
+
+        dataDS4.write().format("bigquery")
+                .option("writeMethod", "indirect")
+                .option("temporaryGcsBucket", argsMap.get("bucket"))
+                .option("intermediateFormat", "avro")
+                .mode(SaveMode.Append)
+                .save(argsMap.get("targetTable"));
+
         spark.stop();
     }
 
@@ -142,7 +147,7 @@ public class SparkVtdJavaApp {
         record.put("myRequiredBoolean", true);
         byte[] bytes = readBytesFromFile("src/test/resources/myRecord.xml");
         record.put("myRequiredBytes", ByteBuffer.wrap(bytes));
-        record.put("myBytesDecimal",  doubleToByteBuffer(1.23d));
+        record.put("myBytesDecimal", doubleToByteBuffer(1.23d));
         record.put("myRequiredTimestamp", System.currentTimeMillis() * 1000); // needs to be timestamp_micros (not timestamp_millis)
         record.put("myRequiredDate", (int) new Date(System.currentTimeMillis()).toLocalDate().toEpochDay());
         record.put("myRequiredArrayLongs", Arrays.asList(1L, 2L, 3L));
@@ -171,27 +176,8 @@ public class SparkVtdJavaApp {
         return record;
     }
 
-    private static byte[] readBytesFromFile(String filePath) {
-        try {
-            return Files.readAllBytes(Paths.get(filePath));
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-
-
-    private static ByteBuffer doubleToByteBuffer(double d) {
-        BigDecimal bigDecimal = BigDecimal.valueOf(d).setScale(9, RoundingMode.UNNECESSARY);
-        BigInteger bigInteger = bigDecimal.unscaledValue();
-        return ByteBuffer.wrap(bigInteger.toByteArray());
-    }
-
-
     private static boolean isLocal() {
         String osName = System.getProperty("os.name").toLowerCase();
         return osName.contains("mac") || osName.contains("windows");
     }
-
-
 }
