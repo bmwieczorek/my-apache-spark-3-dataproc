@@ -1,13 +1,18 @@
 package com.bartek.spark;
 
+import org.apache.avro.LogicalType;
+import org.apache.avro.LogicalTypes;
 import org.apache.avro.Schema;
-import org.apache.avro.generic.GenericData;
 import org.apache.avro.generic.GenericRecord;
+import org.apache.avro.util.Utf8;
 import org.apache.spark.sql.Row;
 import org.apache.spark.sql.RowFactory;
 
+import java.nio.ByteBuffer;
+import java.sql.Timestamp;
 import java.util.List;
 
+import static com.bartek.spark.Utils.byteBufferToBigDecimal;
 import static com.bartek.spark.Utils.unwrapSchema;
 
 public class GenericRecordToRowConverter {
@@ -24,16 +29,36 @@ public class GenericRecordToRowConverter {
 
     @SuppressWarnings({"unchecked", "DuplicateBranchesInSwitch"})
     private static Object convert(Object obj, Schema schema) {
+        if (obj == null) {
+            return null;
+        }
         Schema.Type type = schema.getType();
+        LogicalType logicalType = schema.getLogicalType();
         switch (type) {
             case INT:
-            case STRING:
-            case LONG:
             case BOOLEAN:
             case FLOAT:
             case DOUBLE:
-            case BYTES:
                 return obj;
+            case STRING:
+                return obj instanceof Utf8 ? obj.toString(): obj;
+            case BYTES: {
+                if (logicalType instanceof LogicalTypes.Decimal && obj instanceof ByteBuffer) {
+                    return byteBufferToBigDecimal((ByteBuffer) obj);
+                }
+//                System.err.println("Unrecognized " + type + "," + logicalType + "," + obj.getClass() + "," + obj);
+                return obj; // already as byte[] or java.math.BigDecimal
+            }
+            case LONG: {
+                if (logicalType instanceof LogicalTypes.TimestampMicros && obj instanceof Long) {
+                    return new Timestamp((long) obj);
+                }
+                if (logicalType instanceof LogicalTypes.TimestampMillis && obj instanceof Long) {
+                    return new Timestamp((long) obj);
+                }
+//                System.err.println("Unrecognized " + type + "," + logicalType + "," + obj.getClass() + "," + obj);
+                return obj; // already as java.sql.Timestamp
+            }
             case RECORD: {
                 GenericRecord record = (GenericRecord) obj;
                 List<Schema.Field> fields = record.getSchema().getFields();
@@ -48,7 +73,7 @@ public class GenericRecordToRowConverter {
                 Schema elementSchema = unwrapSchema(schema.getElementType());
                 Schema.Type elementSchemaType = elementSchema.getType();
                 if (elementSchemaType == Schema.Type.RECORD) {
-                    GenericData.Array<GenericRecord> recordArray = (GenericData.Array<GenericRecord>) obj;
+                    List<GenericRecord> recordArray = (List<GenericRecord>) obj;
                     Row[] rows = new Row[recordArray.size()];
                     for (int i = 0; i < recordArray.size(); i++) {
                         GenericRecord record = recordArray.get(i);
@@ -73,12 +98,12 @@ public class GenericRecordToRowConverter {
                         case BYTES:
                             return obj;
                         default:
-                            throw new UnsupportedOperationException("Unsupported array type " + type + ", " + schema.getLogicalType());
+                            throw new UnsupportedOperationException("Unsupported array type " + type + ", " + logicalType);
                     }
                 }
             }
             default:
-                throw new UnsupportedOperationException("Unsupported type " + type + ", " + schema.getLogicalType());
+                throw new UnsupportedOperationException("Unsupported type " + type + ", " + logicalType);
         }
     }
 }
