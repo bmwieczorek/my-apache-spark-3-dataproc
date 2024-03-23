@@ -96,6 +96,7 @@ public class SparkVtdJavaApp {
                 .option("writeMethod", "indirect")
                 .option("temporaryGcsBucket", argsMap.get("bucket"))
                 .option("intermediateFormat", "avro")
+                .option("useAvroLogicalTypes", "true")
                 .mode(SaveMode.Append)
                 .save(argsMap.get("targetTable"));
 
